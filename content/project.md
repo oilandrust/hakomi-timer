@@ -16,4 +16,5 @@ In addition, in each round we have dedicated time for practice and for feedback.
 This is simple math for distributing time, but I made a small app to help us do it.
 We can set the total session time, and the app will set the time for each round; then we can launch timers with the set time for each round.
 As the session goes on, the app recalculates the round for the remaining time to account for any delays.
+
 I haven't used the app yet, but I will this fall as I will be an assistant in a training.
