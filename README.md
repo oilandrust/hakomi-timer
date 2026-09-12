@@ -94,8 +94,8 @@ install. Android will ask you to allow installs from that source the first time.
 **Option B — install over USB with adb** (USB debugging enabled in Developer options):
 
 ```bash
-git clone <this repository>
-cd hakomi-practice-timer
+origin repo clone olivier-rouiller/hakomi-focus   # or git clone the repository URL
+cd hakomi-focus
 ./gradlew :app:installDebug       # builds and installs on the connected phone
 ```
 
