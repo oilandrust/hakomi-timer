@@ -84,6 +84,34 @@ Point Gradle at your SDK with `local.properties` (`sdk.dir=/path/to/Android/Sdk`
 
 Minimum Android version: 8.0 (API 26). Target: Android 15 (API 35).
 
+## Running it on your phone
+
+**Option A — sideload the APK.** Every push to `main` runs the *Android* GitHub Actions
+workflow, which uploads `hakomi-practice-timer-debug` (the debug APK) as a build artifact.
+Download it, copy it to the phone (or open the download link on the phone), and tap it to
+install. Android will ask you to allow installs from that source the first time.
+
+**Option B — install over USB with adb** (USB debugging enabled in Developer options):
+
+```bash
+git clone <this repository>
+cd hakomi-practice-timer
+./gradlew :app:installDebug       # builds and installs on the connected phone
+```
+
+or, with an APK already in hand:
+
+```bash
+adb install -r app-debug.apk
+```
+
+**Option C — Android Studio.** Open the project folder, let it sync, plug in the phone and
+press Run.
+
+The debug build is signed with the local debug keystore; a build from a different machine
+(or from CI) has a different signature, so uninstall the previous copy before installing one
+from another source.
+
 ## Permissions
 
 - `WAKE_LOCK`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE` — keep the countdown

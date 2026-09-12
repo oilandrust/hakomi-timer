@@ -88,10 +88,10 @@ class TimerService : Service() {
         state?.let { Triple(it.phase, it.runState, TimerEngine.remainingSeconds(it, now)) }
 
     private fun startInForeground(notification: Notification) {
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-        } else {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
+        val type = when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
+            else -> 0
         }
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
     }
