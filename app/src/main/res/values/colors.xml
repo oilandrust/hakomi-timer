@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="hakomi_canvas">#F6F8F3</color>
+    <color name="hakomi_green">#445540</color>
+    <color name="hakomi_sage">#95A489</color>
+    <color name="hakomi_slate">#7993A1</color>
+    <color name="hakomi_mist">#E9F0E5</color>
+    <color name="ic_launcher_background">#445540</color>
+</resources>

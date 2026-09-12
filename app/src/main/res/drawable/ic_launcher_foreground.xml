@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A soft ring with a single leaf-like sweep: a still circle, a gentle passage of time. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E9F0E5"
+        android:strokeWidth="3"
+        android:pathData="M54,30 a24,24 0 1,1 -0.01,0 z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#95A489"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,30 A24,24 0 0,1 78,54" />
+    <path
+        android:fillColor="#F6F8F3"
+        android:pathData="M54,50.5 a3.5,3.5 0 1,1 -0.01,0 z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F6F8F3"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L54,40" />
+</vector>

@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Hakomi Practice Timer</string>
+    <string name="notification_channel_name">Practice timer</string>
+    <string name="notification_channel_description">Shows the running practice round countdown.</string>
+    <string name="notification_title_practice">Practice · %1$s left</string>
+    <string name="notification_title_feedback">Feedback · %1$s left</string>
+    <string name="notification_title_break">Break · %1$s left</string>
+    <string name="notification_paused">Paused</string>
+    <string name="notification_phase_done">Time is up</string>
+</resources>
