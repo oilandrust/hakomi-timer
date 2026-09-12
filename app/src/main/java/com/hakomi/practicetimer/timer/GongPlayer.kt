@@ -31,7 +31,7 @@ class GongPlayer(context: Context) {
 
     fun play() {
         val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HakomiTimer:gong")
-        wakeLock.acquire(DURATION_SECONDS * 1000L + 2_000L)
+        wakeLock.acquire(DURATION_MILLIS + 2_000L)
         Thread {
             try {
                 vibrate()
@@ -62,7 +62,7 @@ class GongPlayer(context: Context) {
         try {
             track.write(samples, 0, samples.size)
             track.play()
-            Thread.sleep(DURATION_SECONDS * 1000L + 200L)
+            Thread.sleep(DURATION_MILLIS + 200L)
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
         } finally {
@@ -106,6 +106,7 @@ class GongPlayer(context: Context) {
     private companion object {
         const val SAMPLE_RATE = 44_100
         const val DURATION_SECONDS = 3f
+        const val DURATION_MILLIS = 3_000L
         const val BASE_FREQUENCY = 200.0
         val PARTIALS = doubleArrayOf(1.0, 2.76, 5.4, 8.54, 13.3)
     }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
@@ -63,7 +64,7 @@ class SessionRepository(context: Context) {
 
     private inline fun <reified T> write(key: String, value: T?) {
         val editor = prefs.edit()
-        if (value == null) editor.remove(key) else editor.putString(key, json.encodeToString(value))
+        if (value == null) editor.remove(key) else editor.putString(key, json.encodeToString<T>(value))
         editor.apply()
     }
 
