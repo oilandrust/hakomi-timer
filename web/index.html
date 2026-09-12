@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hakomi Practice Timer · Android</title>
+  <meta name="description" content="Download the Hakomi Practice Timer Android app." />
+  <style>
+    :root {
+      --forest: #445540;
+      --sage: #95A489;
+      --slate: #7993A1;
+      --mist: #E9F0E5;
+      --canvas: #F6F8F3;
+      --ink: #333333;
+      --soft: #58595C;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--canvas);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+    main {
+      max-width: 28rem;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem 4rem;
+    }
+    .eyebrow {
+      letter-spacing: 0.16em;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--sage);
+      text-transform: uppercase;
+    }
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 400;
+      font-size: 2.15rem;
+      line-height: 1.2;
+      margin: 0.4rem 0 0.6rem;
+    }
+    p { color: var(--soft); margin: 0 0 1rem; }
+    .card {
+      background: #fff;
+      border: 1px solid #D5DDCF;
+      border-radius: 1.4rem;
+      padding: 1.6rem 1.4rem 1.5rem;
+      margin: 1.8rem 0;
+    }
+    .download {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      background: var(--forest);
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.05rem;
+      padding: 1.05rem 1.2rem;
+      border-radius: 0.9rem;
+    }
+    .download:active { background: #34432F; }
+    .meta {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--slate);
+      margin: 0.85rem 0 0;
+    }
+    ol { padding-left: 1.2rem; color: var(--soft); }
+    li { margin: 0.45rem 0; }
+    .note {
+      font-size: 0.9rem;
+      background: var(--mist);
+      border-radius: 0.9rem;
+      padding: 0.9rem 1rem;
+      color: var(--forest);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Hakomi practice</div>
+    <h1>Timer for Android</h1>
+    <p>A quiet timer for training groups. Plan the session, share the rounds, keep the phone awake while you practise.</p>
+
+    <div class="card">
+      <a class="download" href="hakomi-practice-timer.apk" download="hakomi-practice-timer.apk">
+        Download the APK
+      </a>
+      <p class="meta">Debug build · 17&nbsp;MB · Android 8 or newer</p>
+    </div>
+
+    <p class="note">On the phone, tap the file after it downloads. The first time, Android will ask you to allow installs from the browser.</p>
+
+    <h2 class="eyebrow" style="margin-top:2rem;">If it does not install</h2>
+    <ol>
+      <li>Open the downloaded file from the notification or your Downloads folder.</li>
+      <li>Allow “Install unknown apps” for Chrome or your files app.</li>
+      <li>If you already have a copy from another computer, uninstall that one first — debug builds from different machines do not overwrite each other.</li>
+    </ol>
+  </main>
+</body>
+</html>

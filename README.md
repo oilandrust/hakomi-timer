@@ -86,10 +86,12 @@ Minimum Android version: 8.0 (API 26). Target: Android 15 (API 35).
 
 ## Running it on your phone
 
-**Option A — sideload the APK.** Every push to `main` runs the *Android* GitHub Actions
-workflow, which uploads `hakomi-practice-timer-debug` (the debug APK) as a build artifact.
-Download it, copy it to the phone (or open the download link on the phone), and tap it to
-install. Android will ask you to allow installs from that source the first time.
+**On the phone itself:** open the download page and tap **Download the APK**.
+The page lives in `web/` and can be published to Vercel (use Publish in this chat).
+A copy of the same file is `web/hakomi-practice-timer.apk`.
+
+**Option A — sideload the APK.** Every push to `main` also runs the *Android* GitHub Actions
+workflow, which uploads `hakomi-practice-timer-debug` as a build artifact.
 
 **Option B — install over USB with adb** (USB debugging enabled in Developer options):
 

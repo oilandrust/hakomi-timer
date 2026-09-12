@@ -22,3 +22,6 @@ Thumbs.db
 
 # Agent terminal logs
 terminals/
+
+*.apk
+!web/hakomi-practice-timer.apk
