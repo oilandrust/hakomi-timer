@@ -73,7 +73,11 @@ fun AppNav() {
             composable(Routes.SESSION) {
                 val current = session
                 if (current == null) {
-                    LaunchedEffect(Unit) { resetTo(Routes.PLAN) }
+                    // Only redirect if we are genuinely parked here (e.g. restored state); during an
+                    // exit transition the destination has already moved on.
+                    LaunchedEffect(Unit) {
+                        if (navController.currentDestination?.route == Routes.SESSION) resetTo(Routes.PLAN)
+                    }
                     Box(Modifier.fillMaxSize())
                 } else {
                     SessionScreen(
@@ -93,7 +97,11 @@ fun AppNav() {
             composable(Routes.TIMER) {
                 val state = timerState
                 if (state == null || session == null) {
-                    LaunchedEffect(Unit) { if (session == null) resetTo(Routes.PLAN) else backToSession() }
+                    LaunchedEffect(Unit) {
+                        if (navController.currentDestination?.route == Routes.TIMER) {
+                            if (session == null) resetTo(Routes.PLAN) else backToSession()
+                        }
+                    }
                     Box(Modifier.fillMaxSize())
                 } else {
                     TimerScreen(
