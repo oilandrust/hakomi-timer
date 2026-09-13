@@ -75,12 +75,18 @@ import kotlin.math.abs
 
 /** Small letter-spaced heading used above each group of controls. */
 @Composable
-fun Eyebrow(text: String, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+fun Eyebrow(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textAlign: TextAlign? = null,
+) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelMedium,
         color = color,
         modifier = modifier,
+        textAlign = textAlign,
     )
 }
 

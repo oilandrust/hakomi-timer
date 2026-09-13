@@ -27,7 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.HourglassEmpty
-import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,16 +37,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.hakomi.practicetimer.domain.Distribution
-import com.hakomi.practicetimer.domain.Pacing
 import com.hakomi.practicetimer.domain.PracticeSession
 import com.hakomi.practicetimer.domain.RoundSplit
 import com.hakomi.practicetimer.domain.Slot
@@ -97,7 +99,7 @@ fun SessionScreen(
     ) {
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Spacer(Modifier.height(8.dp))
-            SessionHeader(distribution, session, use24Hour, onBack = requestExit)
+            SessionHeader(distribution, use24Hour, onBack = requestExit)
             Spacer(Modifier.height(20.dp))
         }
 
@@ -132,8 +134,10 @@ fun SessionScreen(
                     text = "Round ${slot.number}",
                     color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier
+                        .fillMaxWidth()
                         .padding(horizontal = 24.dp)
                         .padding(top = 20.dp),
+                    textAlign = TextAlign.Center,
                 )
                 Box(
                     modifier = Modifier
@@ -143,10 +147,8 @@ fun SessionScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     EditableMinutes(
-                        minutes = split.practiceMinutes,
-                        onMinutesChanged = { practice ->
-                            roundMinutes = (practice + split.feedbackMinutes).coerceAtLeast(1)
-                        },
+                        minutes = split.totalMinutes,
+                        onMinutesChanged = { roundMinutes = it },
                     )
                 }
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -173,8 +175,10 @@ fun SessionScreen(
                     text = "Break",
                     color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier
+                        .fillMaxWidth()
                         .padding(horizontal = 24.dp)
                         .padding(top = 20.dp),
+                    textAlign = TextAlign.Center,
                 )
                 Box(
                     modifier = Modifier
@@ -255,7 +259,7 @@ private fun RoundProgressBar(
 }
 
 @Composable
-private fun SessionHeader(distribution: Distribution, session: PracticeSession, use24Hour: Boolean, onBack: () -> Unit) {
+private fun SessionHeader(distribution: Distribution, use24Hour: Boolean, onBack: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) {
             Icon(
@@ -271,12 +275,11 @@ private fun SessionHeader(distribution: Distribution, session: PracticeSession, 
         ) {
             HeaderStat(
                 icon = { Icon(Icons.Outlined.HourglassEmpty, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp)) },
-                text = "${TimeFormat.minutes(distribution.remainingMinutes)} left",
+                text = TimeFormat.minutes(distribution.remainingMinutes),
             )
             HeaderStat(
-                icon = { Icon(Icons.Outlined.Schedule, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp)) },
-                text = (if (session.plan.pacing == Pacing.FLEXIBLE) "about " else "until ") +
-                    TimeFormat.timeOfDay(distribution.sessionEndMillis, use24Hour),
+                icon = { Icon(Icons.Outlined.Notifications, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp)) },
+                text = TimeFormat.timeOfDay(distribution.sessionEndMillis, use24Hour),
             )
         }
         Spacer(Modifier.width(48.dp))
@@ -339,7 +342,7 @@ private fun PracticeFeedbackSplit(split: RoundSplit, onFeedbackChanged: (Int) ->
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .height(92.dp)
+            .height(61.dp)
             .clip(shape)
             .background(colors.surface)
             .border(1.dp, colors.outline, shape)
@@ -381,12 +384,12 @@ private fun PracticeFeedbackSplit(split: RoundSplit, onFeedbackChanged: (Int) ->
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text("Practice", style = MaterialTheme.typography.titleLarge, color = colors.primary)
+                Text("Practice", style = MaterialTheme.typography.titleMedium, color = colors.primary)
                 Text(TimeFormat.minutes(practice), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.End) {
-                Text("Feedback", style = MaterialTheme.typography.titleLarge, color = colors.tertiary)
+                Text("Feedback", style = MaterialTheme.typography.titleMedium, color = colors.tertiary)
                 Text(TimeFormat.minutes(feedback), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
         }

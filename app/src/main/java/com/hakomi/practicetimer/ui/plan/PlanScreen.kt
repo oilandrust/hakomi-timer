@@ -98,7 +98,7 @@ private fun PlanModeHeader(viewModel: PlanViewModel) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Total session",
+            text = "Practice",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface,
         )

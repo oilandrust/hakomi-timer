@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +74,7 @@ fun TimerScreen(
     }
 
     val context = LocalContext.current
+    val use24Hour = remember(context) { android.text.format.DateFormat.is24HourFormat(context) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val startWithPermission = {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -103,6 +106,11 @@ fun TimerScreen(
     )
     val remainingSeconds = TimerEngine.remainingSeconds(state, now)
     val countdown = TimeFormat.countdown(remainingSeconds)
+    val endsAtMillis = when {
+        state.isFinished -> null
+        state.isRunning -> state.endAtMillis
+        else -> now + state.remainingMillis
+    }
 
     Column(
         modifier = Modifier
@@ -111,7 +119,29 @@ fun TimerScreen(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (endsAtMillis != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        Icons.Outlined.Notifications,
+                        contentDescription = null,
+                        tint = colors.secondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = TimeFormat.timeOfDay(endsAtMillis, use24Hour),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = colors.onSurface,
+                    )
+                }
+            }
+            Spacer(Modifier.weight(1f))
             IconButton(onClick = requestExit) {
                 Icon(Icons.Rounded.Close, contentDescription = "Leave the timer", tint = colors.onSurfaceVariant)
             }
