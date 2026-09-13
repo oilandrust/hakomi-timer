@@ -42,7 +42,8 @@ class PlanViewModel(
         private set
     var breakMinutes by mutableStateOf(seed.breakMinutes)
         private set
-    var landingMinutes by mutableStateOf(max(1, seed.landingMinutes))
+    /** Not offered on the planning screen at the moment, so nothing is held back by default. */
+    var landingMinutes by mutableStateOf(0)
         private set
     var includeLanding by mutableStateOf(seed.includeLanding)
         private set
@@ -92,6 +93,10 @@ class PlanViewModel(
 
     fun nudgeDuration(deltaMinutes: Int) = chooseDuration(durationMinutes + deltaMinutes)
 
+    fun chooseDurationHours(hours: Int) = chooseDuration(hours * 60 + durationMinutes % 60)
+
+    fun chooseDurationMinutes(minutes: Int) = chooseDuration((durationMinutes / 60) * 60 + minutes)
+
     fun selectEndTime(endMillis: Long) {
         targetEndMillis = endMillis
     }
@@ -104,6 +109,30 @@ class PlanViewModel(
 
     fun pickEndTime(hour: Int, minute: Int, zone: ZoneId = ZoneId.systemDefault()) {
         targetEndMillis = EndTimePresets.endMillisFor(hour, minute, clock(), zone)
+    }
+
+    /** Moves the end time to the morning or the afternoon, keeping the hour and minute shown. */
+    fun setMeridiem(pm: Boolean, zone: ZoneId = ZoneId.systemDefault()) {
+        val time = targetEndLocalTime(zone) ?: return
+        if ((time.hour >= 12) == pm) return
+        pickEndTime(if (pm) time.hour + 12 else time.hour - 12, time.minute, zone)
+    }
+
+    fun chooseEndHour(hour24: Int, zone: ZoneId = ZoneId.systemDefault()) {
+        val time = targetEndLocalTime(zone) ?: return
+        pickEndTime(hour24, time.minute, zone)
+    }
+
+    /** A typed hour is read off the clock face, so 3 stays in the afternoon if the end time already was. */
+    fun chooseEndHourOnClock(hour: Int, use24Hour: Boolean, zone: ZoneId = ZoneId.systemDefault()) {
+        val time = targetEndLocalTime(zone) ?: return
+        val hour24 = if (use24Hour) hour else hour % 12 + if (time.hour >= 12) 12 else 0
+        pickEndTime(hour24, time.minute, zone)
+    }
+
+    fun chooseEndMinute(minute: Int, zone: ZoneId = ZoneId.systemDefault()) {
+        val time = targetEndLocalTime(zone) ?: return
+        pickEndTime(time.hour, minute, zone)
     }
 
     fun targetEndLocalTime(zone: ZoneId = ZoneId.systemDefault()) =
@@ -122,7 +151,7 @@ class PlanViewModel(
     }
 
     fun nudgeLanding(delta: Int) {
-        landingMinutes = (landingMinutes + delta).coerceIn(1, 60)
+        landingMinutes = (landingMinutes + delta).coerceIn(0, 60)
     }
 
     fun choosePacing(value: Pacing) {

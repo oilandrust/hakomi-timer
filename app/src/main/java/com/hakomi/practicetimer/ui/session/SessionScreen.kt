@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,9 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.HourglassEmpty
@@ -41,15 +37,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.hakomi.practicetimer.domain.Distribution
@@ -60,14 +53,12 @@ import com.hakomi.practicetimer.domain.Slot
 import com.hakomi.practicetimer.domain.TimeFormat
 import com.hakomi.practicetimer.domain.TimerTarget
 import com.hakomi.practicetimer.ui.components.ConfirmDialog
+import com.hakomi.practicetimer.ui.components.EditableMinutes
 import com.hakomi.practicetimer.ui.components.Eyebrow
 import com.hakomi.practicetimer.ui.components.PrimaryAction
-import com.hakomi.practicetimer.ui.components.RoundBubble
-import com.hakomi.practicetimer.ui.components.SectionCard
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SessionScreen(
     session: PracticeSession,
@@ -86,12 +77,13 @@ fun SessionScreen(
         }
     }
 
-    // Re-select the natural next slot whenever completion changes, but let the user override it.
-    var selectedSlot by remember(session.completedRounds, session.breakCompleted) { mutableStateOf(session.nextSlot) }
+    // Always follow the natural next slot; the progress bar is status only.
+    val selectedSlot = session.nextSlot
     var showExitConfirmation by remember { mutableStateOf(false) }
 
     val distribution = session.distribution(now)
     val insets = WindowInsets.safeDrawing.asPaddingValues()
+    val completedRounds = (1..session.plan.rounds).count { session.isCompleted(Slot.Round(it)) }
 
     val requestExit = {
         if (session.allDone) onFinishSession() else showExitConfirmation = true
@@ -101,72 +93,111 @@ fun SessionScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(insets)
-            .padding(horizontal = 20.dp),
+            .padding(insets),
     ) {
-        Spacer(Modifier.height(8.dp))
-        SessionHeader(distribution, session, use24Hour, onBack = requestExit)
-        Spacer(Modifier.height(20.dp))
-
-        SectionCard {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                (1..session.plan.rounds).forEach { number ->
-                    val slot = Slot.Round(number)
-                    RoundBubble(
-                        label = number.toString(),
-                        sublabel = "round",
-                        selected = selectedSlot == slot,
-                        completed = session.isCompleted(slot),
-                        onClick = { selectedSlot = slot },
-                        size = 70,
-                    )
-                }
-                if (session.hasBreak) {
-                    RoundBubble(
-                        label = "Break",
-                        selected = selectedSlot == Slot.Break,
-                        completed = session.breakCompleted,
-                        onClick = { selectedSlot = Slot.Break },
-                        size = 70,
-                    )
-                }
-            }
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Spacer(Modifier.height(8.dp))
+            SessionHeader(distribution, session, use24Hour, onBack = requestExit)
+            Spacer(Modifier.height(20.dp))
         }
 
-        Spacer(Modifier.height(28.dp))
+        RoundProgressBar(
+            totalRounds = session.plan.rounds,
+            completedRounds = completedRounds,
+        )
 
         when (val slot = selectedSlot) {
-            null -> AllDone(onFinish = onFinishSession)
-
-            is Slot.Round -> {
-                val split = distribution.split(session.feedbackMinutes)
-                RoundPanel(
-                    slot = slot,
-                    split = split,
-                    onFeedbackChanged = onFeedbackMinutesChanged,
-                    onStart = {
-                        onStartTimer(
-                            TimerTarget(
-                                slot = slot,
-                                practiceMinutes = split.practiceMinutes,
-                                feedbackMinutes = split.feedbackMinutes,
-                            ),
-                        )
-                    },
-                )
+            null -> {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AllDoneContent()
+                }
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    PrimaryAction(text = "Finish session", onClick = onFinishSession)
+                    Spacer(Modifier.height(20.dp))
+                }
             }
 
-            Slot.Break -> BreakPanel(
-                minutes = session.plan.breakMinutes,
-                onStart = { onStartTimer(TimerTarget(slot = Slot.Break, breakMinutes = session.plan.breakMinutes)) },
-            )
+            is Slot.Round -> {
+                var roundMinutes by remember(slot.number, distribution.roundMinutes) {
+                    mutableIntStateOf(distribution.roundMinutes)
+                }
+                val split = RoundSplit.of(roundMinutes, session.feedbackMinutes)
+                Eyebrow(
+                    text = "Round ${slot.number}",
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 20.dp),
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    EditableMinutes(
+                        minutes = split.practiceMinutes,
+                        onMinutesChanged = { practice ->
+                            roundMinutes = (practice + split.feedbackMinutes).coerceAtLeast(1)
+                        },
+                    )
+                }
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    PracticeFeedbackSplit(split = split, onFeedbackChanged = onFeedbackMinutesChanged)
+                    Spacer(Modifier.height(18.dp))
+                    PrimaryAction(
+                        text = "Start round ${slot.number}",
+                        onClick = {
+                            onStartTimer(
+                                TimerTarget(
+                                    slot = slot,
+                                    practiceMinutes = split.practiceMinutes,
+                                    feedbackMinutes = split.feedbackMinutes,
+                                ),
+                            )
+                        },
+                    )
+                    Spacer(Modifier.height(20.dp))
+                }
+            }
+
+            Slot.Break -> {
+                Eyebrow(
+                    text = "Break",
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 20.dp),
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BreakTimeDisplay(minutes = session.plan.breakMinutes)
+                }
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    PrimaryAction(
+                        text = "Start break",
+                        onClick = {
+                            onStartTimer(TimerTarget(slot = Slot.Break, breakMinutes = session.plan.breakMinutes))
+                        },
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                    )
+                    Spacer(Modifier.height(20.dp))
+                }
+            }
         }
-        Spacer(Modifier.height(36.dp))
     }
 
     if (showExitConfirmation) {
@@ -180,6 +211,46 @@ fun SessionScreen(
             },
             onDismiss = { showExitConfirmation = false },
         )
+    }
+}
+
+/**
+ * Edge-to-edge bar of round segments. Each is 1/N of the screen width, flush with its neighbours.
+ * Completed rounds are forest green; the current one is sage; later rounds stay empty for now.
+ */
+@Composable
+private fun RoundProgressBar(
+    totalRounds: Int,
+    completedRounds: Int,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val done = completedRounds.coerceIn(0, totalRounds)
+    val showActive = done < totalRounds
+    if (totalRounds <= 0) return
+
+    Row(modifier = modifier.fillMaxWidth().height(10.dp)) {
+        repeat(done) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(colors.primary),
+            )
+        }
+        if (showActive) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(colors.secondary),
+            )
+        }
+        // Reserve the remaining width so each segment stays 1/N of the full screen.
+        val remaining = totalRounds - done - if (showActive) 1 else 0
+        if (remaining > 0) {
+            Spacer(Modifier.weight(remaining.toFloat()))
+        }
     }
 }
 
@@ -221,68 +292,24 @@ private fun HeaderStat(icon: @Composable () -> Unit, text: String) {
 }
 
 @Composable
-private fun RoundPanel(
-    slot: Slot.Round,
-    split: RoundSplit,
-    onFeedbackChanged: (Int) -> Unit,
-    onStart: () -> Unit,
-) {
+private fun BreakTimeDisplay(minutes: Int) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Eyebrow("Round ${slot.number}", color = MaterialTheme.colorScheme.secondary)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = split.totalMinutes.toString(),
-            style = MaterialTheme.typography.displayMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = "minutes for this round",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(24.dp))
-        PracticeFeedbackSplit(split = split, onFeedbackChanged = onFeedbackChanged)
-        Spacer(Modifier.height(10.dp))
-        Text(
-            "Drag the divider to give feedback more or less room.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(28.dp))
-        PrimaryAction(text = "Start round ${slot.number}", onClick = onStart)
-    }
-}
-
-@Composable
-private fun BreakPanel(minutes: Int, onStart: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Eyebrow("Break", color = MaterialTheme.colorScheme.secondary)
-        Spacer(Modifier.height(4.dp))
         Text(
             text = minutes.toString(),
             style = MaterialTheme.typography.displayMedium,
             color = MaterialTheme.colorScheme.secondary,
         )
         Text(
-            text = "minutes to rest",
+            text = "min",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(36.dp))
-        PrimaryAction(
-            text = "Start break",
-            onClick = onStart,
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSecondary,
         )
     }
 }
 
 @Composable
-private fun AllDone(onFinish: () -> Unit) {
+private fun AllDoneContent() {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Spacer(Modifier.height(12.dp))
         Text("All done", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(8.dp))
         Text(
@@ -291,8 +318,6 @@ private fun AllDone(onFinish: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.height(36.dp))
-        PrimaryAction(text = "Finish session", onClick = onFinish)
     }
 }
 
