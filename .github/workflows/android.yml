@@ -6,6 +6,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,3 +45,44 @@ jobs:
         with:
           name: unit-test-results
           path: app/build/test-results/testDebugUnitTest/
+
+      - name: Prepare GitHub Pages site
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p site
+          cp web/index.html site/index.html
+          cp app/build/outputs/apk/debug/app-debug.apk site/hakomi-practice-timer.apk
+          SIZE_MB=$(du -m site/hakomi-practice-timer.apk | cut -f1)
+          BUILT_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          SHORT_SHA="${GITHUB_SHA::7}"
+          cat > site/build.json <<EOF
+          {
+            "sha": "${GITHUB_SHA}",
+            "shortSha": "${SHORT_SHA}",
+            "builtAt": "${BUILT_AT}",
+            "sizeMb": ${SIZE_MB},
+            "runUrl": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          }
+          EOF
+          # Keep the page readable without JS: stamp the meta line at publish time.
+          sed -i "s|Debug build · [^<]*|Debug build · ${SIZE_MB}\&nbsp;MB · ${SHORT_SHA} · ${BUILT_AT}|" site/index.html
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy-pages:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

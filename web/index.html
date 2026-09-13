@@ -68,6 +68,7 @@
       color: var(--slate);
       margin: 0.85rem 0 0;
     }
+    .meta a { color: var(--slate); }
     ol { padding-left: 1.2rem; color: var(--soft); }
     li { margin: 0.45rem 0; }
     .note {
@@ -89,7 +90,7 @@
       <a class="download" href="hakomi-practice-timer.apk" download="hakomi-practice-timer.apk">
         Download the APK
       </a>
-      <p class="meta">Debug build · 17&nbsp;MB · Android 8 or newer</p>
+      <p class="meta" id="build-meta">Debug build · Android 8 or newer</p>
     </div>
 
     <p class="note">On the phone, tap the file after it downloads. The first time, Android will ask you to allow installs from the browser.</p>
@@ -101,5 +102,28 @@
       <li>If you already have a copy from another computer, uninstall that one first — debug builds from different machines do not overwrite each other.</li>
     </ol>
   </main>
+  <script>
+    fetch("build.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (build) {
+        if (!build) return;
+        var el = document.getElementById("build-meta");
+        var when = build.builtAt ? new Date(build.builtAt).toUTCString().replace(" GMT", " UTC") : "";
+        var parts = ["Debug build"];
+        if (build.sizeMb) parts.push(build.sizeMb + "\u00a0MB");
+        if (build.shortSha) parts.push(build.shortSha);
+        if (when) parts.push(when);
+        parts.push("Android 8 or newer");
+        el.textContent = parts.join(" · ");
+        if (build.runUrl) {
+          var link = document.createElement("a");
+          link.href = build.runUrl;
+          link.textContent = "CI run";
+          el.appendChild(document.createTextNode(" · "));
+          el.appendChild(link);
+        }
+      })
+      .catch(function () {});
+  </script>
 </body>
 </html>
