@@ -20,17 +20,25 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Spa
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -62,6 +70,8 @@ fun PlanScreen(
     val plan = viewModel.plan(now)
     // Deliberately not the IME inset: the keypad may cover the footer, but the wheels must not move.
     val insets = WindowInsets.systemBars.union(WindowInsets.displayCutout).asPaddingValues()
+    var showRoundsPicker by remember { mutableStateOf(false) }
+    var showBreakPicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -71,16 +81,26 @@ fun PlanScreen(
     ) {
         Spacer(Modifier.height(16.dp))
         PlanModeHeader(viewModel)
-        Box(
+        Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            contentAlignment = Alignment.Center,
         ) {
-            TimePickerSection(viewModel, now, use24Hour)
+            Box(
+                modifier = Modifier
+                    .weight(3f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                TimePickerSection(viewModel, now, use24Hour)
+            }
+            RoundsAndBreakSummaries(
+                plan = plan,
+                onRoundsClick = { showRoundsPicker = true },
+                onBreakClick = { showBreakPicker = true },
+            )
+            Spacer(Modifier.weight(0.7f))
         }
-        RoundsAndBreakSection(viewModel, plan)
-        Spacer(Modifier.height(20.dp))
         PlanFooter(
             plan = plan,
             now = now,
@@ -88,6 +108,42 @@ fun PlanScreen(
             onStart = { if (viewModel.launchSession()) onSessionStarted() },
         )
         Spacer(Modifier.height(20.dp))
+    }
+
+    if (showRoundsPicker) {
+        OptionPickerDialog(
+            title = "Rounds",
+            onDismiss = { showRoundsPicker = false },
+        ) {
+            SessionPlan.roundPresets.forEach { count ->
+                SmallPreset(
+                    text = count.toString(),
+                    selected = viewModel.rounds == count,
+                    onClick = {
+                        viewModel.chooseRounds(count)
+                        showRoundsPicker = false
+                    },
+                )
+            }
+        }
+    }
+
+    if (showBreakPicker) {
+        OptionPickerDialog(
+            title = "Break",
+            onDismiss = { showBreakPicker = false },
+        ) {
+            SessionPlan.breakPresets.forEach { minutes ->
+                SmallPreset(
+                    text = if (minutes == 0) "None" else "$minutes",
+                    selected = viewModel.breakMinutes == minutes,
+                    onClick = {
+                        viewModel.chooseBreak(minutes)
+                        showBreakPicker = false
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -98,7 +154,7 @@ private fun PlanModeHeader(viewModel: PlanViewModel) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Practice",
+            text = "Plan Session",
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -243,63 +299,90 @@ private fun MeridiemSelector(isPm: Boolean, onSelect: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun RoundsAndBreakSection(viewModel: PlanViewModel, plan: SessionPlan) {
+private fun RoundsAndBreakSummaries(
+    plan: SessionPlan,
+    onRoundsClick: () -> Unit,
+    onBreakClick: () -> Unit,
+) {
+    val roundLabel = if (plan.rounds == 1) "1 Round" else "${plan.rounds} Rounds"
+    val roundsSummary = "$roundLabel of ${TimeFormat.minutes(plan.perRoundMinutes)}"
+    val breakSummary = if (plan.breakMinutes == 0) {
+        "Add break"
+    } else {
+        "${TimeFormat.minutes(plan.breakMinutes)} break"
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        InlineSettingRow(
-            title = "Rounds",
-            titleExtra = {
-                Text(
-                    text = " (${TimeFormat.minutes(plan.perRoundMinutes)})",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            },
-        ) {
-            SessionPlan.roundPresets.forEach { count ->
-                SmallPreset(
-                    text = count.toString(),
-                    selected = viewModel.rounds == count,
-                    onClick = { viewModel.chooseRounds(count) },
-                )
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        InlineSettingRow(title = "Break") {
-            SessionPlan.breakPresets.forEach { minutes ->
-                SmallPreset(
-                    text = if (minutes == 0) "None" else "$minutes",
-                    selected = viewModel.breakMinutes == minutes,
-                    onClick = { viewModel.chooseBreak(minutes) },
-                )
-            }
-        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        SummaryRow(
+            text = roundsSummary,
+            icon = Icons.Outlined.Autorenew,
+            onClick = onRoundsClick,
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        SummaryRow(
+            text = breakSummary,
+            icon = Icons.Outlined.Spa,
+            onClick = onBreakClick,
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
-/** A section heading with its controls on the same line. */
 @Composable
-private fun InlineSettingRow(
-    title: String,
-    titleExtra: (@Composable () -> Unit)? = null,
-    content: @Composable RowScope.() -> Unit,
+private fun SummaryRow(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
 ) {
+    val colors = MaterialTheme.colorScheme
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = colors.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
         )
-        titleExtra?.invoke()
-        Spacer(Modifier.weight(1f))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content,
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun OptionPickerDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    content: @Composable RowScope.() -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(title, style = MaterialTheme.typography.headlineSmall)
+        },
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+                content = content,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done", style = MaterialTheme.typography.labelLarge)
+            }
+        },
+    )
 }
 
 @Composable

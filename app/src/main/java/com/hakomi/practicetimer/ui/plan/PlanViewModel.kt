@@ -81,10 +81,20 @@ class PlanViewModel(
 
     fun chooseTimingMode(mode: TimingMode) {
         if (mode == timingMode) return
-        timingMode = mode
-        if (mode == TimingMode.UNTIL && targetEndMillis == null) {
-            targetEndMillis = endPresets(clock()).first().endMillis
+        val nowMillis = clock()
+        when (mode) {
+            TimingMode.UNTIL -> {
+                // Keep the same session length: end = now + current duration.
+                targetEndMillis = nowMillis + durationMinutes.toLong() * SessionPlan.MILLIS_PER_MINUTE
+            }
+            TimingMode.DURING -> {
+                // Keep the same session length: duration = minutes until the chosen end.
+                val minutes = targetEndMillis?.let { EndTimePresets.minutesBetween(nowMillis, it) }
+                    ?: durationMinutes
+                durationMinutes = minutes.coerceIn(MIN_DURATION, MAX_DURATION)
+            }
         }
+        timingMode = mode
     }
 
     fun chooseDuration(minutes: Int) {

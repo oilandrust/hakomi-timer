@@ -121,27 +121,8 @@ fun TimerScreen(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End,
         ) {
-            if (endsAtMillis != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        Icons.Outlined.Notifications,
-                        contentDescription = null,
-                        tint = colors.secondary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Text(
-                        text = TimeFormat.timeOfDay(endsAtMillis, use24Hour),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = colors.onSurface,
-                    )
-                }
-            }
-            Spacer(Modifier.weight(1f))
             IconButton(onClick = requestExit) {
                 Icon(Icons.Rounded.Close, contentDescription = "Leave the timer", tint = colors.onSurfaceVariant)
             }
@@ -158,13 +139,25 @@ fun TimerScreen(
             textAlign = TextAlign.Center,
             maxLines = 1,
         )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = phaseHint(state),
-            style = MaterialTheme.typography.bodyLarge,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        if (endsAtMillis != null) {
+            Spacer(Modifier.height(14.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.Notifications,
+                    contentDescription = null,
+                    tint = colors.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = TimeFormat.timeOfDay(endsAtMillis, use24Hour),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+        }
 
         Spacer(Modifier.weight(1.2f))
 
@@ -228,23 +221,6 @@ private fun phaseTitle(state: TimerState): String {
         Phase.FEEDBACK -> "${prefix}Feedback"
         Phase.BREAK -> "Break"
         Phase.FINISHED -> if (slot is Slot.Round) "Round ${slot.number} complete" else "Break complete"
-    }
-}
-
-private fun phaseHint(state: TimerState): String = when {
-    state.isPaused -> "Paused. Take the moment you need."
-    state.isFinished -> "Thank you. Take a breath before moving on."
-    state.isRunning -> when (state.phase) {
-        Phase.PRACTICE -> "Stay with what is here."
-        Phase.FEEDBACK -> "Notice, then share what you noticed."
-        Phase.BREAK -> "Step away. The timer keeps the time."
-        Phase.FINISHED -> ""
-    }
-    else -> when (state.phase) {
-        Phase.PRACTICE -> "Settle in, then begin when the group is ready."
-        Phase.FEEDBACK -> "Practice is complete. Begin feedback when everyone has landed."
-        Phase.BREAK -> "The break begins as soon as you like."
-        Phase.FINISHED -> ""
     }
 }
 

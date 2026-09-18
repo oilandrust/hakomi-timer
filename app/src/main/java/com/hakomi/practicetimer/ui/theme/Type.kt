@@ -32,7 +32,7 @@ const val TabularFigures = "tnum, lnum"
 
 val HakomiTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = Cormorant,
+        fontFamily = Sans,
         fontWeight = FontWeight.Light,
         fontSize = 104.sp,
         lineHeight = 108.sp,
@@ -40,7 +40,7 @@ val HakomiTypography = Typography(
         fontFeatureSettings = TabularFigures,
     ),
     displayMedium = TextStyle(
-        fontFamily = Cormorant,
+        fontFamily = Sans,
         fontWeight = FontWeight.Light,
         fontSize = 72.sp,
         lineHeight = 76.sp,

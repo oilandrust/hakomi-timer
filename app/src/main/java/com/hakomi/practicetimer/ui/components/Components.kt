@@ -1,5 +1,6 @@
 package com.hakomi.practicetimer.ui.components
 
+import androidx.activity.compose.BackHandler
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
@@ -16,9 +17,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -56,10 +59,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
@@ -321,8 +324,8 @@ fun NumberWheel(
                                     val middle = (layout.viewportStartOffset + layout.viewportEndOffset) / 2f
                                     val info = layout.visibleItemsInfo.firstOrNull { it.index == index }
                                     val steps = info?.let { abs(it.offset + it.size / 2f - middle) / it.size } ?: 2f
-                                    alpha = (1f - 0.6f * steps).coerceIn(0.1f, 1f)
-                                    val shrink = (1f - 0.2f * steps).coerceIn(0.62f, 1f)
+                                    alpha = (1f - 0.85f * steps).coerceIn(0.08f, 1f)
+                                    val shrink = (1f - 0.28f * steps).coerceIn(0.55f, 1f)
                                     scaleX = shrink
                                     scaleY = shrink
                                 },
@@ -337,6 +340,7 @@ fun NumberWheel(
                         typing = false
                         typed?.coerceIn(values.first(), values.last())?.let(commitTyped)
                     },
+                    onCancel = { typing = false },
                     modifier = Modifier
                         .height(itemHeight)
                         .defaultMinSize(minWidth = 96.dp)
@@ -359,22 +363,37 @@ fun NumberWheel(
 private fun TypedNumberField(
     placeholder: String,
     onCommit: (Int?) -> Unit,
+    onCancel: () -> Unit,
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.displayMedium,
     maxDigits: Int = 2,
 ) {
     val colors = MaterialTheme.colorScheme
     var text by remember { mutableStateOf("") }
-    var focused by remember { mutableStateOf(false) }
-    var committed by remember { mutableStateOf(false) }
+    var finished by remember { mutableStateOf(false) }
+    var imeWasShown by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val density = LocalDensity.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+    val latestOnCommit by rememberUpdatedState(onCommit)
+    val latestOnCancel by rememberUpdatedState(onCancel)
 
-    val commit = {
-        if (!committed) {
-            committed = true
+    // Soft keyboards consume the first back to hide themselves; treat that hide as cancel too.
+    LaunchedEffect(imeVisible) {
+        if (imeVisible) {
+            imeWasShown = true
+        } else if (imeWasShown && !finished) {
+            finished = true
+            latestOnCancel()
+        }
+    }
+
+    BackHandler {
+        if (!finished) {
+            finished = true
             keyboard?.hide()
-            onCommit(text.toIntOrNull())
+            latestOnCancel()
         }
     }
 
@@ -385,12 +404,16 @@ private fun TypedNumberField(
         textStyle = style.copy(color = colors.primary, textAlign = TextAlign.Center),
         cursorBrush = SolidColor(colors.primary),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { commit() }),
-        modifier = modifier
-            .focusRequester(focusRequester)
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) focused = true else if (focused) commit()
+        keyboardActions = KeyboardActions(
+            onDone = {
+                if (!finished) {
+                    finished = true
+                    keyboard?.hide()
+                    latestOnCommit(text.toIntOrNull())
+                }
             },
+        ),
+        modifier = modifier.focusRequester(focusRequester),
         decorationBox = { field ->
             Box(contentAlignment = Alignment.Center) {
                 if (text.isEmpty()) {
@@ -406,7 +429,10 @@ private fun TypedNumberField(
         },
     )
 
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
 }
 
 /**
@@ -448,6 +474,7 @@ fun EditableDuration(
             editing = editing == DurationPart.HOURS,
             onStartEdit = { editing = DurationPart.HOURS },
             onCommit = { commit(DurationPart.HOURS, it) },
+            onCancel = { editing = null },
             color = colors.primary,
         )
         Spacer(Modifier.width(18.dp))
@@ -457,6 +484,7 @@ fun EditableDuration(
             editing = editing == DurationPart.MINUTES,
             onStartEdit = { editing = DurationPart.MINUTES },
             onCommit = { commit(DurationPart.MINUTES, it) },
+            onCancel = { editing = null },
             color = colors.primary,
             format = { it.toString().padStart(2, '0') },
         )
@@ -486,6 +514,7 @@ fun EditableMinutes(
             val next = typed.coerceIn(minMinutes, maxMinutes)
             if (next != clamped) onMinutesChanged(next)
         },
+        onCancel = { editing = false },
         color = colors.primary,
         modifier = modifier,
         maxDigits = 3,
@@ -501,6 +530,7 @@ private fun DurationPartField(
     editing: Boolean,
     onStartEdit: () -> Unit,
     onCommit: (Int?) -> Unit,
+    onCancel: () -> Unit,
     color: Color,
     modifier: Modifier = Modifier,
     maxDigits: Int = 2,
@@ -516,6 +546,7 @@ private fun DurationPartField(
                 TypedNumberField(
                     placeholder = format(value),
                     onCommit = onCommit,
+                    onCancel = onCancel,
                     style = style,
                     maxDigits = maxDigits,
                 )
